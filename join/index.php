@@ -1,3 +1,31 @@
+<?php
+  // セッションを使うページに必ず入れる
+  session_start();
+
+  // フォームからデータが送信された場合
+  if (!empty($_POST)) {
+    // エラー項目の確認
+    if ($_POST['nick_name'] == '') {
+      $error['nick_name'] = 'blank';
+    }
+    if ($_POST['email'] == '') {
+      $error['email'] = 'blank';
+    }
+    if ($_POST['password'] == '') {
+      $error['password'] = 'blank';
+    } else if (strlen($_POST['password']) < 4) {
+      $error['password'] = 'length';
+    }
+
+    // エラーがない場合
+    if (empty($error)) {
+      $_SESSION['join'] = $_POST;
+      header('Location: check.php');
+      exit();
+    }
+  }
+
+?>
 <!DOCTYPE html>
 <html lang="ja">
   <head>
