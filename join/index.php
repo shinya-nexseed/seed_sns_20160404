@@ -8,11 +8,11 @@
     <title>SeedSNS</title>
 
     <!-- Bootstrap -->
-    <link href="../../assets/css/bootstrap.css" rel="stylesheet">
-    <link href="../../assets/font-awesome/css/font-awesome.css" rel="stylesheet">
-    <link href="../../assets/css/form.css" rel="stylesheet">
-    <link href="../../assets/css/timeline.css" rel="stylesheet">
-    <link href="../../assets/css/main.css" rel="stylesheet">
+    <link href="../assets/css/bootstrap.css" rel="stylesheet">
+    <link href="../assets/font-awesome/css/font-awesome.css" rel="stylesheet">
+    <link href="../assets/css/form.css" rel="stylesheet">
+    <link href="../assets/css/timeline.css" rel="stylesheet">
+    <link href="../assets/css/main.css" rel="stylesheet">
     <!--
       designフォルダ内では2つパスの位置を戻ってからcssにアクセスしていることに注意！
      -->
@@ -36,7 +36,7 @@
                   <span class="icon-bar"></span>
                   <span class="icon-bar"></span>
               </button>
-              <a class="navbar-brand" href="index.html"><span class="strong-title"><i class="fa fa-twitter-square"></i> Seed SNS</span></a>
+              <a class="navbar-brand" href="index.php"><span class="strong-title"><i class="fa fa-twitter-square"></i> Seed SNS</span></a>
           </div>
           <!-- Collect the nav links, forms, and other content for toggling -->
           <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
@@ -52,7 +52,7 @@
     <div class="row">
       <div class="col-md-6 col-md-offset-3 content-margin-top">
         <legend>会員登録</legend>
-        <form method="post" action="" class="form-horizontal" role="form">
+        <form method="post" action="" class="form-horizontal" role="form" enctype="multipart/form-data">
           <!-- ニックネーム -->
           <div class="form-group">
             <label class="col-sm-4 control-label">ニックネーム</label>
