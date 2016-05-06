@@ -6,8 +6,9 @@
 
   // フォームからデータが送信された場合
   if (!empty($_POST)) {
+    $name = trim(mb_convert_kana($_POST['nick_name'], "s", 'UTF-8'));
     // エラー項目の確認
-    if ($_POST['nick_name'] == '') {
+    if ($name == '') {
       $error['nick_name'] = 'blank';
     }
     if ($_POST['email'] == '') {
