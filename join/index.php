@@ -30,7 +30,12 @@
 
     // エラーがない場合
     if (empty($error)) {
+      // 画像をアップロードする
+      $picture = date('YmdHis') . $_FILES['picture_path']['name'];
+      move_uploaded_file($_FILES['picture_path']['tmp_name'], '../member_picture/' . $picture);
+
       $_SESSION['join'] = $_POST;
+      $_SESSION['join']['picture'] = $picture;
       header('Location: check.php');
       exit();
     }
