@@ -20,6 +20,14 @@
       $error['password'] = 'length';
     }
 
+    $fileName = $_FILES['picture_path']['name'];
+    if (!empty($fileName)) {
+      $ext = substr($fileName, -3);
+      if ($ext != 'jpg' && $ext != 'gif' && $ext != 'png') {
+        $error['picture_path'] = 'type';
+      }
+    }
+
     // エラーがない場合
     if (empty($error)) {
       $_SESSION['join'] = $_POST;
@@ -135,6 +143,9 @@
             <label class="col-sm-4 control-label">プロフィール写真</label>
             <div class="col-sm-8">
               <input type="file" name="picture_path" class="form-control">
+              <?php if (isset($error['picture_path']) && $error['picture_path'] == 'type'): ?>
+                <p class="error">* 写真などは「.gif」「.jpg」「.png」の画像を指定してください。</p>
+              <?php endif; ?>
             </div>
           </div>
 
