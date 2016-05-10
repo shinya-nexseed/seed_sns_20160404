@@ -1,3 +1,23 @@
+<?php 
+  // セッションを使用
+  session_start();
+
+  // セッションの削除の仕方
+  // $_SESSION = Array();
+  // session_unset();
+  // session_destroy();
+
+  // $_SESSION['join']が存在しなければindex.phpに強制遷移させる
+  if (!isset($_SESSION['join'])) {
+    header('Location: index.php');
+    exit();
+  }
+
+  // var_dump($_SESSION['join']);
+  echo '<br><br>'; // 表示がかぶらないよう改行を2回はさむ
+  echo $_SESSION['join']['nick_name'];
+?>
+
 <!DOCTYPE html>
 <html lang="ja">
   <head>
