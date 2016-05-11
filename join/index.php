@@ -41,6 +41,17 @@
     }
   }
 
+  // 書き直し
+  if (isset($_REQUEST['action'])) {
+    // $_REQUESTスーパーグローバル変数
+    // $_GETと$_POSTなどのスーパーグローバル変数を含む変数です。
+    if ($_REQUEST['action'] == 'rewrite') {
+      
+      $_POST = $_SESSION['join'];
+      $error['rewrite'] = true;
+    }
+  }
+
 ?>
 <!DOCTYPE html>
 <html lang="ja">
