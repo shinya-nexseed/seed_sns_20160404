@@ -1,6 +1,7 @@
 <?php
   // セッションを使うページに必ず入れる
   session_start();
+  require('../dbconnect.php');
 
   $error = Array();
 
@@ -26,6 +27,24 @@
       if ($ext != 'jpg' && $ext != 'gif' && $ext != 'png') {
         $error['picture_path'] = 'type';
       }
+    }
+
+    // 重複アカウントのチェック
+    if (empty($error)) {
+        $sql = sprintf(
+            'SELECT COUNT(*) AS cnt FROM members WHERE email="%s"',
+            mysqli_real_escape_string($db,$_POST['email'])
+        );
+        $record = mysqli_query($db,$sql) or die(mysqli_error($db));
+        $table = mysqli_fetch_assoc($record);
+        // echo $table;
+        // $table = array('COUNT(*)' => '1');
+        // $table = array('cnt' => '1');
+
+        // もし$table['cnt']が1以上を返せば、アカウントが重複しているとみなして$errorを生成する
+        if ($table['cnt'] > 0) {
+            $error['email'] = 'duplicate';
+        }
     }
 
     // エラーがない場合
@@ -133,6 +152,9 @@
             <?php endif; ?>
             <?php if (isset($error['email']) && $error['email'] == 'blank'): ?>
               <p class="error">* メールアドレスを入力してください。</p>
+            <?php endif; ?>
+            <?php if (isset($error['email']) && $error["email"] == 'duplicate'): ?>
+                <p class="error">* 指定されたメールアドレスはすでに登録されています。</p>
             <?php endif; ?>
             </div>
           </div>
