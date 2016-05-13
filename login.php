@@ -3,6 +3,13 @@
 
   session_start();
 
+  // 自動ログイン処理
+  if (isset($_COOKIE['email']) && $_COOKIE['email'] != '') {
+    $_POST['email'] = $_COOKIE['email'];
+    $_POST['password'] = $_COOKIE['password'];
+    $_POST['save'] = 'on';
+  }
+
   // ログインボタンを押した際に読まれる
   if (!empty($_POST)) {
 
@@ -24,6 +31,19 @@
         // 次のページでログイン判定をするために使用するidをSESSIONで管理
         $_SESSION['id'] = $table['member_id'];
         $_SESSION['time'] = time();
+
+        // ログイン情報を記録する
+        if ($_POST['save'] == 'on') {
+          // クッキーは、setcookie()関数を使用して、
+          // 保持する値と保持したい期間を引数に与える。
+          setcookie('email', $_POST['email'], time() + 60*60*24*14);
+          setcookie('password', $_POST['password'], time() + 60*60*24*14);
+          // setcookie('キー', 値, 期間);
+          // ↓
+          // $_COOKIE = array('email' => $_POST['email'],
+          //                  'password' => $_POST['password']
+          //                  );
+        }
         
         header('Location: index.php');
         exit(); 

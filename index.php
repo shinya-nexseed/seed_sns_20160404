@@ -6,13 +6,50 @@
   // 現在時刻より小さいときにログインしていると判定する
   if (isset($_SESSION['id']) && $_SESSION['time'] + 3600 > time()) {
     // $_SESSIONに保存している時間更新
+    $_SESSION['time'] = time();
 
     // ログインしているユーザーのデータをDBから取得 ($_SESSION['id']を使用して)
+    $sql = sprintf('SELECT * FROM `members` WHERE `member_id`=%d',
+      mysqli_real_escape_string($db, $_SESSION['id'])
+      );
+
+    $record = mysqli_query($db, $sql) or die (mysqli_error());
+    $member = mysqli_fetch_assoc($record);
     
   } else {
     // ログインしていない場合の処理
-
+    header('Location: login.php');
+    exit();
   }
+
+  // 投稿を記録する
+  if (!empty($_POST)) {
+    if ($_POST['tweet'] != '') {
+      $sql = sprintf('INSERT INTO `tweets` SET `tweet`="%s", `member_id`=%d, `created`= now()',
+        mysqli_real_escape_string($db, $_POST['tweet']),
+        mysqli_real_escape_string($db, $member['member_id'])
+        );
+      mysqli_query($db, $sql) or die(mysqli_error($db));
+
+      header('Location: index.php');
+      exit();
+    }
+  }
+
+  // 投稿を取得する
+  $sql = 'SELECT m.nick_name, m.picture_path, t.* 
+          FROM `tweets` t, `members` m 
+          WHERE t.member_id=m.member_id 
+          ORDER BY t.created DESC';
+
+  $tweets = mysqli_query($db, $sql) or die(mysqli_error($db));
+  // while ($tweet = mysqli_fetch_assoc($tweets)) {
+  //   var_dump($tweet);
+  //   echo $tweet['nick_name'];
+  //   echo $tweet['tweet'];
+  //   echo '<hr>';
+  // }
+
 ?>
 
 <!DOCTYPE html>
@@ -66,7 +103,7 @@
   <div class="container">
     <div class="row">
       <div class="col-md-4 content-margin-top">
-        <legend>ようこそ●●さん！</legend>
+        <legend>ようこそ <?php echo htmlspecialchars($member['nick_name'], ENT_QUOTES, 'UTF-8'); ?>さん！</legend>
         <form method="post" action="" class="form-horizontal" role="form">
             <!-- つぶやき -->
             <div class="form-group">
@@ -86,62 +123,25 @@
       </div>
 
       <div class="col-md-8 content-margin-top">
-        <div class="msg">
-          <img src="http://c85c7a.medialib.glogster.com/taniaarca/media/71/71c8671f98761a43f6f50a282e20f0b82bdb1f8c/blog-images-1349202732-fondo-steve-jobs-ipad.jpg" width="48" height="48">
-          <p>
-            つぶやき４<span class="name"> (Seed kun) </span>
-            [<a href="#">Re</a>]
-          </p>
-          <p class="day">
-            <a href="view.html">
-              2016-01-28 18:04
-            </a>
-            [<a href="#" style="color: #00994C;">編集</a>]
-            [<a href="#" style="color: #F33;">削除</a>]
-          </p>
-        </div>
-        <div class="msg">
-          <img src="http://c85c7a.medialib.glogster.com/taniaarca/media/71/71c8671f98761a43f6f50a282e20f0b82bdb1f8c/blog-images-1349202732-fondo-steve-jobs-ipad.jpg" width="48" height="48">
-          <p>
-            つぶやき３<span class="name"> (Seed kun) </span>
-            [<a href="#">Re</a>]
-          </p>
-          <p class="day">
-            <a href="view.html">
-              2016-01-28 18:03
-            </a>
-            [<a href="#" style="color: #00994C;">編集</a>]
-            [<a href="#" style="color: #F33;">削除</a>]
-          </p>
-        </div>
-        <div class="msg">
-          <img src="http://c85c7a.medialib.glogster.com/taniaarca/media/71/71c8671f98761a43f6f50a282e20f0b82bdb1f8c/blog-images-1349202732-fondo-steve-jobs-ipad.jpg" width="48" height="48">
-          <p>
-            つぶやき２<span class="name"> (Seed kun) </span>
-            [<a href="#">Re</a>]
-          </p>
-          <p class="day">
-            <a href="view.html">
-              2016-01-28 18:02
-            </a>
-            [<a href="#" style="color: #00994C;">編集</a>]
-            [<a href="#" style="color: #F33;">削除</a>]
-          </p>
-        </div>
-        <div class="msg">
-          <img src="http://c85c7a.medialib.glogster.com/taniaarca/media/71/71c8671f98761a43f6f50a282e20f0b82bdb1f8c/blog-images-1349202732-fondo-steve-jobs-ipad.jpg" width="48" height="48">
-          <p>
-            つぶやき１<span class="name"> (Seed kun) </span>
-            [<a href="#">Re</a>]
-          </p>
-          <p class="day">
-            <a href="view.html">
-              2016-01-28 18:01
-            </a>
-            [<a href="#" style="color: #00994C;">編集</a>]
-            [<a href="#" style="color: #F33;">削除</a>]
-          </p>
-        </div>
+        <?php while($tweet = mysqli_fetch_assoc($tweets)): ?>
+          <div class="msg">
+            <img src="member_picture/<?php echo htmlspecialchars($tweet['picture_path'], ENT_QUOTES, 'UTF-8'); ?>" width="48" height="48">
+            <p>
+              <?php echo htmlspecialchars($tweet['tweet'], ENT_QUOTES, 'UTF-8'); ?>
+              <span class="name">
+                 (<?php echo htmlspecialchars($tweet['nick_name'], ENT_QUOTES, 'UTF-8'); ?>) 
+               </span>
+              [<a href="#">Re</a>]
+            </p>
+            <p class="day">
+              <a href="view.html">
+                <?php echo htmlspecialchars($tweet['created'], ENT_QUOTES, 'UTF-8'); ?>
+              </a>
+              [<a href="#" style="color: #00994C;">編集</a>]
+              [<a href="#" style="color: #F33;">削除</a>]
+            </p>
+          </div>
+        <?php endwhile; ?>
       </div>
 
     </div>
