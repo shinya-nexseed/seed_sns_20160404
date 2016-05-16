@@ -25,9 +25,10 @@
   // 投稿を記録する
   if (!empty($_POST)) {
     if ($_POST['tweet'] != '') {
-      $sql = sprintf('INSERT INTO `tweets` SET `tweet`="%s", `member_id`=%d, `created`= now()',
+      $sql = sprintf('INSERT INTO `tweets` SET `tweet`="%s", `member_id`=%d, `reply_tweet_id`=%d, `created`= now()',
         mysqli_real_escape_string($db, $_POST['tweet']),
-        mysqli_real_escape_string($db, $member['member_id'])
+        mysqli_real_escape_string($db, $member['member_id']),
+        mysqli_real_escape_string($db, $_POST['reply_tweet_id'])
         );
       mysqli_query($db, $sql) or die(mysqli_error($db));
 
@@ -37,10 +38,35 @@
   }
 
   // 投稿を取得する
-  $sql = 'SELECT m.nick_name, m.picture_path, t.* 
+
+  $page = '';
+  // URLのパラメータにpageが存在していれば$pageに代入
+  if (isset($_REQUEST['page'])) {
+    $page = $_REQUEST['page'];
+  }
+  
+  if ($page == '') {
+    $page = 1;
+  }
+  $page = max($page, 1);
+
+  // 最終ページを取得する
+  $sql = 'SELECT COUNT(*) AS cnt FROM `tweets`';
+  $recordSet = mysqli_query($db, $sql);
+  $table = mysqli_fetch_assoc($recordSet);
+  $maxPage = ceil($table['cnt'] / 5);
+  $page = min($page, $maxPage);
+
+  $start = ($page - 1) * 5;
+  $start = max(0, $start);
+
+  $sql = sprintf('SELECT m.nick_name, m.picture_path, t.* 
           FROM `tweets` t, `members` m 
           WHERE t.member_id=m.member_id 
-          ORDER BY t.created DESC';
+          ORDER BY t.created DESC
+          LIMIT %d,5',
+            $start
+          );
 
   $tweets = mysqli_query($db, $sql) or die(mysqli_error($db));
   // while ($tweet = mysqli_fetch_assoc($tweets)) {
@@ -49,6 +75,31 @@
   //   echo $tweet['tweet'];
   //   echo '<hr>';
   // }
+
+  // 返信の場合
+  if (isset($_REQUEST['res'])) {
+    $sql = sprintf('SELECT m.nick_name, m.picture_path, t.* FROM `tweets` t, `members` m WHERE t.member_id = m.member_id AND t.tweet_id = %d ORDER BY t.created DESC',
+      mysqli_real_escape_string($db, $_REQUEST['res'])
+    );
+    $record = mysqli_query($db, $sql);
+    $table = mysqli_fetch_assoc($record);
+    $tweet = '>> @'.$table['nick_name'].' '.$table['tweet'];
+  }
+
+  // htmlspecialcharsのショートカット
+  function h($value){
+    return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+  }
+
+  // 実装した機能を保ちつつ、コードの可動性をあげることを「リファクタリング」と言います。
+  // ①機能をどんな形でも良いので実装する
+  // ②コードの可動性をあげるために修正します
+  // ③修正した状態で機能がしっかりと動くか確認
+
+  // 本文内のURLにリンクを設定します
+  function makeLink($value){
+    return mb_ereg_replace('(https?)(://[[:alnum:]\+\$\;\?\.%,!#~*/:@&=_-]+)','<a href="\1\2" target="_blank">\1\2</a>', $value);
+  }
 
 ?>
 
@@ -103,13 +154,18 @@
   <div class="container">
     <div class="row">
       <div class="col-md-4 content-margin-top">
-        <legend>ようこそ <?php echo htmlspecialchars($member['nick_name'], ENT_QUOTES, 'UTF-8'); ?>さん！</legend>
+        <legend>ようこそ <?php echo h($member['nick_name']); ?>さん！</legend>
         <form method="post" action="" class="form-horizontal" role="form">
             <!-- つぶやき -->
             <div class="form-group">
               <label class="col-sm-4 control-label">つぶやき</label>
               <div class="col-sm-8">
-                <textarea name="tweet" cols="50" rows="5" class="form-control" placeholder="例：Hello World!"></textarea>
+                <?php if(isset($tweet)): ?>
+                  <textarea name="tweet" cols="50" rows="5" class="form-control" placeholder="例：Hello World!"><?php echo h($tweet); ?></textarea>
+                  <input type="hidden" name="reply_tweet_id" value="<?php echo h($_REQUEST['res']); ?>">
+                <?php else: ?>
+                  <textarea name="tweet" cols="50" rows="5" class="form-control" placeholder="例：Hello World!"></textarea>
+                <?php endif; ?>
               </div>
             </div>
           <ul class="paging">
@@ -125,20 +181,25 @@
       <div class="col-md-8 content-margin-top">
         <?php while($tweet = mysqli_fetch_assoc($tweets)): ?>
           <div class="msg">
-            <img src="member_picture/<?php echo htmlspecialchars($tweet['picture_path'], ENT_QUOTES, 'UTF-8'); ?>" width="48" height="48">
+            <img src="member_picture/<?php echo h($tweet['picture_path']); ?>" width="48" height="48">
             <p>
-              <?php echo htmlspecialchars($tweet['tweet'], ENT_QUOTES, 'UTF-8'); ?>
+              <?php echo makeLink(h($tweet['tweet'])); ?>
               <span class="name">
-                 (<?php echo htmlspecialchars($tweet['nick_name'], ENT_QUOTES, 'UTF-8'); ?>) 
+                 (<?php echo h($tweet['nick_name']); ?>) 
                </span>
-              [<a href="#">Re</a>]
+              [<a href="index.php?res=<?php echo h($tweet['tweet_id']); ?>">Re</a>]
             </p>
             <p class="day">
-              <a href="view.html">
-                <?php echo htmlspecialchars($tweet['created'], ENT_QUOTES, 'UTF-8'); ?>
+              <a href="view.php?id=<?php echo h($tweet['tweet_id']); ?>">
+                <?php echo h($tweet['created']); ?>
               </a>
+              <?php if($tweet['reply_tweet_id'] > 0): ?>
+                <a href="view.php?id=<?php echo h($tweet['reply_tweet_id']); ?>"> | 返信元のつぶやき</a>
+              <?php endif; ?>
               [<a href="#" style="color: #00994C;">編集</a>]
-              [<a href="#" style="color: #F33;">削除</a>]
+              <?php if($member['member_id'] == $tweet['member_id']): ?>
+                [<a href="delete.php?id=<?php echo h($tweet['tweet_id']); ?>" style="color: #F33;">削除</a>]
+              <?php endif; ?>
             </p>
           </div>
         <?php endwhile; ?>
