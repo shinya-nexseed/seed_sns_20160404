@@ -35,6 +35,16 @@
       $error['password'] = 'incorrect';
     }
 
+    if (!empty($_POST['new_password'])) {
+      if ($_POST['new_password'] < 4) {
+        $error['new_password'] = 'length';
+      }
+      if ($_POST['new_password'] != $_POST['confirm_password']) {
+        $error['new_password'] = 'incorrect';
+      }
+    }
+
+
     $fileName = $_FILES['picture_path']['name'];
     if (!empty($fileName)) {
       $ext = substr($fileName, -3);
@@ -70,9 +80,10 @@
         $picture = $member['picture_path'];
       }
       // アップデート処理
-      $sql = sprintf('UPDATE `members` SET `nick_name`="%s", `email`="%s", `picture_path`="%s", modified=NOW() WHERE `member_id`=%d',
+      $sql = sprintf('UPDATE `members` SET `nick_name`="%s", `email`="%s", `password`="%s", `picture_path`="%s", modified=NOW() WHERE `member_id`=%d',
           mysqli_real_escape_string($db, $_POST['nick_name']),
           mysqli_real_escape_string($db, $_POST['email']),
+          mysqli_real_escape_string($db, sha1($_POST['new_password'])),
           mysqli_real_escape_string($db, $picture),
           mysqli_real_escape_string($db, $member['member_id'])
         );
@@ -182,7 +193,7 @@
           </div>
           <!-- パスワード -->
           <div class="form-group">
-            <label class="col-sm-4 control-label">パスワード</label>
+            <label class="col-sm-4 control-label">現在のパスワード</label>
             <div class="col-sm-8">
             <?php if (isset($_POST['password'])): ?>
               <input type="password" name="password" class="form-control" placeholder="" value="<?php echo htmlspecialchars($_POST['password'], ENT_QUOTES, 'UTF-8'); ?>">
@@ -195,6 +206,26 @@
             <?php if (isset($error['password']) && $error['password'] == 'incorrect'): ?>
               <p class="error">* パスワードが間違っています。</p>
             <?php endif; ?>
+            </div>
+          </div>
+          <!-- 新規パスワード -->
+          <div class="form-group">
+            <label class="col-sm-4 control-label">新規パスワード</label>
+            <div class="col-sm-8">
+              <input type="password" name="new_password" class="form-control" placeholder="" value="">
+              <?php if (isset($error['new_password']) && $error['new_password'] == 'length'): ?>
+                <p class="error">* パスワードは4文字以上で入力してください。</p>
+              <?php endif; ?>
+              <?php if (isset($error['new_password']) && $error['new_password'] == 'incorrect'): ?>
+                <p class="error">* 確認用パスワードと一致しません。</p>
+              <?php endif; ?>
+            </div>
+          </div>
+          <!-- 確認用パスワード -->
+          <div class="form-group">
+            <label class="col-sm-4 control-label">確認用パスワード</label>
+            <div class="col-sm-8">
+              <input type="password" name="confirm_password" class="form-control" placeholder="" value="">
             </div>
           </div>
           <!-- プロフィール写真 -->
