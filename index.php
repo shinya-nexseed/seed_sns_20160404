@@ -43,7 +43,7 @@
 
   // 投稿を取得する
   $page = '';
-  $countNum = 10;
+  $countNum = 3;
   // URLのパラメータにpageが存在していれば$pageに代入
   if (isset($_REQUEST['page'])) {
     $page = $_REQUEST['page'];
@@ -60,7 +60,20 @@
   // echo 'page3 = ' . $page . '<br>';
 
   // 最終ページを取得する
-  $sql = 'SELECT COUNT(*) AS cnt FROM `tweets`';
+  if (!empty($_REQUEST['search_word'])) {
+    // 検索ボタンを押された時
+    $sql = sprintf('SELECT COUNT(*) 
+                    AS cnt 
+                    FROM `tweets` 
+                    WHERE tweet 
+                    LIKE "%%%s%%"', 
+                      mysqli_real_escape_string($db, $_REQUEST['search_word'])
+      );
+  } else {
+    $sql = 'SELECT COUNT(*) AS cnt FROM `tweets`';
+  }
+  
+
   $recordSet = mysqli_query($db, $sql);
   $table = mysqli_fetch_assoc($recordSet);
   // var_dump($table);
@@ -80,14 +93,29 @@
   $start = max(0, $start);
   // echo 'start2 = ' . $start . '<br>';
 
-  $sql = sprintf('SELECT m.nick_name, m.picture_path, t.* 
-          FROM `tweets` t, `members` m 
-          WHERE t.member_id=m.member_id 
-          ORDER BY t.created DESC
-          LIMIT %d,%d',
-            $start,
-            $countNum
-          );
+  // 検索ボタンが押された時
+  if (!empty($_REQUEST['search_word'])) {
+    $sql = sprintf('SELECT m.nick_name, m.picture_path, t.* 
+            FROM `tweets` t, `members` m 
+            WHERE t.member_id=m.member_id 
+            AND t.tweet LIKE "%%%s%%"
+            ORDER BY t.created DESC
+            LIMIT %d,%d',
+              mysqli_real_escape_string($db, $_REQUEST['search_word']),
+              $start,
+              $countNum
+            );
+  } else {
+    $sql = sprintf('SELECT m.nick_name, m.picture_path, t.* 
+            FROM `tweets` t, `members` m 
+            WHERE t.member_id=m.member_id 
+            ORDER BY t.created DESC
+            LIMIT %d,%d',
+              $start,
+              $countNum
+            );
+  }
+
   // LIMIT句の構文
   // LIMIT データ取得開始位置, データ取得件数
   // LIMIT 0,5 ← 最初から5件取得
@@ -169,6 +197,7 @@
           <!-- Collect the nav links, forms, and other content for toggling -->
           <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
               <ul class="nav navbar-nav navbar-right">
+                <li><a href="user_edit.php">会員情報</a></li>
                 <li><a href="logout.php">ログアウト</a></li>
               </ul>
           </div>
@@ -196,29 +225,49 @@
             </div>
           <ul class="paging">
             <input type="submit" class="btn btn-info" value="つぶやく">
-                
-                &nbsp;&nbsp;&nbsp;&nbsp;
-                <?php if($page > 1): ?>
-                  <!-- パラメータpageの値が1以上であれば「前」ボタンを表示 -->
-                  <li><a href="index.php?page=<?php print($page - 1); ?>" class="btn btn-default">前</a></li>
-                <?php else: ?>
-                  <!-- そうでなければ、1ページ目ということになるので「前」の文字のみ表示 -->
-                  <li>前</li>
-                <?php endif; ?>
+              
+              <!-- 検索時のパラメータ文字列を作成 -->
+              <?php
+                $search_word = '';
+                if (!empty($_REQUEST['search_word'])) {
+                  $search_word = '&search_word=' . $_REQUEST['search_word'];
+                }
+              ?>
 
-                &nbsp;&nbsp;|&nbsp;&nbsp;
-                <?php if($page < $maxPage): ?>
-                  <!-- パラメータpageの値が最終ページ数以下であれば「次」ボタンを表示 -->
-                  <li><a href="index.php?page=<?php print($page + 1); ?>" class="btn btn-default">次</a></li>
-                <?php else: ?>
-                  <!-- そうでなければ、最終ページということになるので「次」の文字のみ表示 -->
-                  <li>次</li>
-                <?php endif; ?>
+              &nbsp;&nbsp;&nbsp;&nbsp;
+              <?php if($page > 1): ?>
+                <!-- パラメータpageの値が1以上であれば「前」ボタンを表示 -->
+                <li><a href="index.php?page=<?php print($page - 1); ?><?php print $search_word; ?>" class="btn btn-default">前</a></li>
+              <?php else: ?>
+                <!-- そうでなければ、1ページ目ということになるので「前」の文字のみ表示 -->
+                <li>前</li>
+              <?php endif; ?>
+
+              &nbsp;&nbsp;|&nbsp;&nbsp;
+              <?php if($page < $maxPage): ?>
+                <!-- パラメータpageの値が最終ページ数以下であれば「次」ボタンを表示 -->
+                <li><a href="index.php?page=<?php print($page + 1); ?><?php print $search_word; ?>" class="btn btn-default">次</a></li>
+              <?php else: ?>
+                <!-- そうでなければ、最終ページということになるので「次」の文字のみ表示 -->
+                <li>次</li>
+              <?php endif; ?>
           </ul>
         </form>
       </div>
 
       <div class="col-md-8 content-margin-top">
+        <!-- 検索窓設置 -->
+        <form method="get" action="" class="form-horizontal" role="form">
+          
+          <?php if(!empty($_REQUEST['search_word'])): ?>
+            <input type="text" name="search_word" 
+            value="<?php echo h($_REQUEST['search_word']); ?>">&nbsp;&nbsp;
+          <?php else: ?>
+            <input type="text" name="search_word" value="">&nbsp;&nbsp;
+          <?php endif; ?>
+          
+          <input type="submit" class="btn btn-success btn-xs" value="検索">
+        </form>
         <?php while($tweet = mysqli_fetch_assoc($tweets)): ?>
           <div class="msg">
             <img src="member_picture/<?php echo h($tweet['picture_path']); ?>" width="48" height="48">
